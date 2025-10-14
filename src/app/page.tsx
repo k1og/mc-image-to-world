@@ -1,9 +1,54 @@
+'use client'
+
 import Image from "next/image";
+import { type ChangeEventHandler, type FormEventHandler, useState } from "react";
 
 export default function Home() {
+  const [file, setFile] = useState<File | null>(null)
+  const handleFormSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
+    event.preventDefault()
+    
+    if (!file) {
+      alert('No image')
+      return
+    }
+    const formData = new FormData()
+    formData.append('img', file)
+    formData.append('version', '1.21.9')
+
+    const res = await fetch('/api/gen', {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!res.ok) {
+      alert('error')
+      return
+    }
+
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'map.zip'
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleFileChange: ChangeEventHandler<HTMLInputElement> = (event) => {
+    setFile(event.target.files?.[0] || null)
+  }
+
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+        <form onSubmit={handleFormSubmit}>
+          <input type="file" id="file" name="file" accept="image/*" onChange={handleFileChange} />
+          <button type='submit'>
+            submit
+          </button>
+        </form>
         <Image
           className="dark:invert"
           src="/next.svg"

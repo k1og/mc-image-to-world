@@ -10,17 +10,20 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "debug": "^4.4.3",
+    "jszip": "^3.10.1",
+    "next": "15.5.5",
+    "prismarine-chunk": "^1.39.0",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.5.5"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@biomejs/biome": "2.2.0",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4",
-    "@biomejs/biome": "2.2.0"
+    "typescript": "^5"
   }
 }
