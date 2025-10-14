@@ -12,10 +12,12 @@
   "dependencies": {
     "debug": "^4.4.3",
     "jszip": "^3.10.1",
+    "minecraft-assets": "^1.17.0",
     "next": "15.5.5",
     "prismarine-chunk": "^1.39.0",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "sharp": "^0.34.4"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
