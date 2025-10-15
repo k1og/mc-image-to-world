@@ -13,6 +13,7 @@ import McAssets from "minecraft-assets";
 import McData from "minecraft-data";
 
 import sharp, { type OverlayOptions } from "sharp";
+import { tileTextureBufferCache, tileColorsCache } from "../../cache";
 
 const getAverageColor = async (imageBuffer: Buffer<ArrayBuffer>) => {
   const {
@@ -25,18 +26,6 @@ const getAverageColor = async (imageBuffer: Buffer<ArrayBuffer>) => {
   return { r, g, b };
 };
 
-const tileColorsCache = new Map<
-  number,
-  {
-    averageColor: { r: number; g: number; b: number };
-    name: string;
-    texture: string;
-    textureBuffer: Buffer<ArrayBuffer>;
-    id: number;
-  }
->();
-
-const tileTextureBufferCache = new Map<string, Buffer<ArrayBufferLike>>();
 const getTileBuffer = async (
   tile: {
     averageColor: { r: number; g: number; b: number };
@@ -60,8 +49,8 @@ const getTileBuffer = async (
 };
 
 export async function POST(req: Request) {
-    console.time('whole')
-console.time('1')
+  console.time("whole");
+  console.time("1");
   const formaData = await req.formData();
   const img = formaData.get("img") as File | null;
   const mcVersion = (formaData.get("version") as string | null) || "1.29.1";
@@ -71,12 +60,12 @@ console.time('1')
   }
 
   const imgArrayBuffer = await img.arrayBuffer();
-console.timeEnd('1')
+  console.timeEnd("1");
 
-  console.time('init')
+  console.time("init");
   const mcAssets = McAssets(mcVersion);
   const mcData = McData(mcVersion);
-  console.timeEnd('init')
+  console.timeEnd("init");
 
   if (!tileColorsCache.size) {
     console.log("Calculating tileColors");
@@ -109,7 +98,7 @@ console.timeEnd('1')
         id: blockData.id,
       });
     });
-    console.timeEnd("Calculating tileColors")
+    console.timeEnd("Calculating tileColors");
   }
 
   const targetImage = sharp(imgArrayBuffer);
@@ -130,23 +119,25 @@ console.timeEnd('1')
 
   const getClosestTileTasks = [];
   console.time("main loop");
-  for (let chunkY = 0; chunkY < height; chunkY += chunkSize) {
-    for (let chunkX = 0; chunkX < width; chunkX += chunkSize) {
+  
+  const chunksX = Math.ceil(width / chunkSize)
+  const chunksY = Math.ceil(height / chunkSize)
+
+  const {
+    data,
+    info
+  } = await targetImage
+    .resize(chunksX, chunksY)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  for (let y = 0; y < chunksY; y++) {
+    for (let x = 0; x < chunksX; x++) {
       getClosestTileTasks.push(
         (async () => {
-          const {
-            data: [r, g, b],
-          } = await targetImage
-            .clone()
-            .extract({
-              left: chunkX,
-              top: chunkY,
-              width: Math.min(chunkX + chunkSize, width) - chunkX,
-              height: Math.min(chunkY + chunkSize, height) - chunkY,
-            })
-            .resize(1, 1)
-            .raw()
-            .toBuffer({ resolveWithObject: true });
+          const offset = info.channels * (chunksX * y + x);
+          const r = data[offset];
+          const g = data[offset + 1];
+          const b = data[offset + 2];
 
           const averageColor = { r, g, b };
 
@@ -154,9 +145,6 @@ console.timeEnd('1')
           let closestColorVal = Infinity;
 
           for (const [_, color] of tileColorsCache) {
-            if (!closestColorTile) {
-              closestColorTile = color;
-            }
             const {
               averageColor: { r, g, b },
             } = color;
@@ -172,54 +160,55 @@ console.timeEnd('1')
 
           const closestTileBuffer = await getTileBuffer(
             closestColorTile,
-            Math.min(chunkX + chunkSize, width) - chunkX,
-            Math.min(chunkY + chunkSize, height) - chunkY
+            chunkSize,
+            chunkSize
           );
 
-          if (!blocksToPlace[chunkX / chunkSize]) {
-            blocksToPlace[chunkX / chunkSize] = [];
+          if (!blocksToPlace[x]) {
+            blocksToPlace[x] = [];
           }
-          blocksToPlace[chunkX / chunkSize][chunkY / chunkSize] =
+          blocksToPlace[x][y] =
             closestColorTile;
 
           composites.push({
             input: closestTileBuffer,
-            left: chunkX,
-            top: chunkY,
+            left: x * chunkSize,
+            top: y * chunkSize,
           });
         })()
       );
-      //   console.log(chunkX, chunkY, chunkX / chunkSize, chunkY / chunkSize);
     }
   }
+  // maybe add p-limit
   await Promise.all(getClosestTileTasks);
   console.timeEnd("main loop");
 
-  console.time('final image')
-//   const finalImageBuffer = await sharp({
-//     create: {
-//       width,
-//       height,
-//       channels: 3,
-//       background: {
-//         r: 255,
-//         g: 255,
-//         b: 255,
-//       },
-//     },
-//   })
-//     .composite(composites)
-//     .toBuffer();
-  console.timeEnd('final image')
+  console.time("final image");
+  const finalImageBuffer = await sharp({
+    create: {
+      width,
+      height,
+      channels: 3,
+      background: {
+        r: 255,
+        g: 255,
+        b: 255,
+      },
+    },
+  })
+    .composite(composites)
+    .jpeg()
+    .toBuffer();
+  console.timeEnd("final image");
 
-  console.time('init gen world')
+  console.time("init gen world");
   const Chunk = prismarineChunk(mcVersion) as unknown as typeof PCChunk;
   const Anvil = prismarineProvider.Anvil(mcVersion);
 
   // Create Anvil provider (handles region files)
   const anvil = new Anvil();
   const chunk = new Chunk(null);
-  console.timeEnd('init gen world')
+  console.timeEnd("init gen world");
 
   // Generate small flat world
   async function generateWorld() {
@@ -232,13 +221,12 @@ console.timeEnd('1')
     async function createSuperflatChunk(x: number, z: number) {
       for (let bx = 0; bx < 16; bx++) {
         for (let bz = 0; bz < 16; bz++) {
-          chunk.setBiome(Vec3(bx, 0 - 64, bz), 40);
           chunk.setBlockType(Vec3(bx, 0 - 64, bz), BEDROCK);
           chunk.setBlockType(Vec3(bx, 1 - 64, bz), DIRT);
           chunk.setBlockType(Vec3(bx, 2 - 64, bz), DIRT);
           chunk.setBlockType(
             Vec3(bx, 3 - 64, bz),
-            blocksToPlace[16 * x + bx]?.[16 * z + bz]?.id || GRASS
+            blocksToPlace[16 * x + bx]?.[16 * z + bz]?.id || DIRT
           );
         }
       }
@@ -256,15 +244,15 @@ console.timeEnd('1')
   const levelDatPath = path.join(process.cwd(), "src/data/level.dat");
   const levelDatBuffer = await fs.readFile(levelDatPath);
 
-  console.time('gen world')
+  console.time("gen world");
   await generateWorld();
-  console.timeEnd('gen world')
+  console.timeEnd("gen world");
 
-  console.time('zip')
+  console.time("zip");
   const zip = new JSZip();
 
   zip.file(img.name, imgArrayBuffer);
-//   zip.file("mosaic.jpg", finalImageBuffer);
+  zip.file("preview.jpg", finalImageBuffer);
   const zipWorldFolder = zip.folder("image_world");
   zipWorldFolder!.file("level.dat", levelDatBuffer);
   const zipRegionWorldFolder = zipWorldFolder!.folder("region");
@@ -274,8 +262,8 @@ console.timeEnd('1')
   });
 
   const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
-  console.timeEnd('zip')
-    console.timeEnd('whole')
+  console.timeEnd("zip");
+  console.timeEnd("whole");
 
   return new NextResponse(zipBuffer, {
     headers: {
