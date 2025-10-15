@@ -119,44 +119,78 @@ export async function POST(req: Request) {
 
   const getClosestTileTasks = [];
   console.time("main loop");
-  
-  const chunksX = Math.ceil(width / chunkSize)
-  const chunksY = Math.ceil(height / chunkSize)
 
-  const {
-    data,
-    info
-  } = await targetImage
-    .resize(chunksX, chunksY)
+  const downsampleWidth = Math.ceil(width / chunkSize);
+  const downsampleHeight = Math.ceil(height / chunkSize);
+
+  const getPixelColor = (
+    x: number,
+    y: number,
+    width: number,
+    channels: number = 3
+  ) => {
+    const offset = channels * (width * y + x);
+    const r = data[offset];
+    const g = data[offset + 1];
+    const b = data[offset + 2];
+    return { r, g, b };
+  };
+
+  const { data, info } = await targetImage
+    .resize(downsampleWidth, downsampleHeight)
     .raw()
     .toBuffer({ resolveWithObject: true });
-  for (let y = 0; y < chunksY; y++) {
-    for (let x = 0; x < chunksX; x++) {
+
+  const findClosestTile = (
+    closestToColor: { r: number; b: number; g: number },
+    tiles: Map<
+      number,
+      {
+        averageColor: { r: number; g: number; b: number };
+        name: string;
+        texture: string;
+        textureBuffer: Buffer<ArrayBuffer>;
+        id: number;
+      }
+    >
+  ) => {
+    let closestColorTile = tiles.values().next().value!;
+    let closestColorVal = Infinity;
+
+    for (const [_, color] of tileColorsCache) {
+      const {
+        averageColor: { r, g, b },
+      } = color;
+      const val =
+        Math.abs(r - closestToColor.r) +
+        Math.abs(g - closestToColor.g) +
+        Math.abs(b - closestToColor.b);
+      if (val < closestColorVal) {
+        closestColorVal = val;
+        closestColorTile = color;
+      }
+    }
+
+    return closestColorTile;
+  };
+
+  for (let y = 0; y < downsampleHeight; y++) {
+    for (let x = 0; x < downsampleWidth; x++) {
       getClosestTileTasks.push(
         (async () => {
-          const offset = info.channels * (chunksX * y + x);
-          const r = data[offset];
-          const g = data[offset + 1];
-          const b = data[offset + 2];
+          const { r, b, g } = getPixelColor(
+            x,
+            y,
+            downsampleWidth,
+            info.channels
+          );
 
           const averageColor = { r, g, b };
 
-          let closestColorTile = tileColorsCache.values().next().value!;
-          let closestColorVal = Infinity;
-
-          for (const [_, color] of tileColorsCache) {
-            const {
-              averageColor: { r, g, b },
-            } = color;
-            const val =
-              Math.abs(r - averageColor.r) +
-              Math.abs(g - averageColor.g) +
-              Math.abs(b - averageColor.b);
-            if (val < closestColorVal) {
-              closestColorVal = val;
-              closestColorTile = color;
-            }
-          }
+          const closestColorTile = findClosestTile(
+            averageColor,
+            tileColorsCache
+          );
 
           const closestTileBuffer = await getTileBuffer(
             closestColorTile,
@@ -167,8 +201,7 @@ export async function POST(req: Request) {
           if (!blocksToPlace[x]) {
             blocksToPlace[x] = [];
           }
-          blocksToPlace[x][y] =
-            closestColorTile;
+          blocksToPlace[x][y] = closestColorTile;
 
           composites.push({
             input: closestTileBuffer,
@@ -216,18 +249,29 @@ export async function POST(req: Request) {
     const BEDROCK = mcData.blocksByName["bedrock"].id;
     const DIRT = mcData.blocksByName["dirt"].id;
     const GRASS = mcData.blocksByName["grass_block"].id;
+    const GRASS_BLOCK_DEFAULT_STATE = 9;
+    
+    const PLAINS_BIOME = 39;
 
     // Generate one chunk
     async function createSuperflatChunk(x: number, z: number) {
       for (let bx = 0; bx < 16; bx++) {
         for (let bz = 0; bz < 16; bz++) {
+          chunk.setBiome(Vec3(bx + x * 16, 3 - 64, bz + z * 16), PLAINS_BIOME)
           chunk.setBlockType(Vec3(bx, 0 - 64, bz), BEDROCK);
           chunk.setBlockType(Vec3(bx, 1 - 64, bz), DIRT);
           chunk.setBlockType(Vec3(bx, 2 - 64, bz), DIRT);
-          chunk.setBlockType(
-            Vec3(bx, 3 - 64, bz),
-            blocksToPlace[16 * x + bx]?.[16 * z + bz]?.id || DIRT
-          );
+          
+          const blockToPlace = blocksToPlace[16 * x + bx]?.[16 * z + bz]?.id
+          const blockToPlaceVec3 = Vec3(bx, 3 - 64, bz)
+          if (blockToPlace) {
+            chunk.setBlockType(
+              blockToPlaceVec3,
+              blockToPlace
+            );
+          } else {
+            chunk.setBlockStateId(blockToPlaceVec3, GRASS_BLOCK_DEFAULT_STATE)
+          }
         }
       }
 
