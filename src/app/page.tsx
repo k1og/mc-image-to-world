@@ -7,7 +7,7 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null)
   const handleFormSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault()
-    
+
     if (!file) {
       alert('No image')
       return
@@ -47,6 +47,14 @@ export default function Home() {
           <input type="file" id="file" name="file" accept="image/*" onChange={handleFileChange} />
           <button type='submit'>
             submit
+          </button>
+          <button type='button' onClick={async () => {
+
+            const res = await fetch('/api/preview', {
+              method: 'POST',
+            })
+          }}>
+            check
           </button>
         </form>
         <Image

@@ -1,12 +1,8 @@
+import type { Tile } from "./types";
+
 const tileColors = new Map<
   number,
-  {
-    averageColor: { r: number; g: number; b: number };
-    name: string;
-    texture: string;
-    textureBuffer: Buffer<ArrayBuffer>;
-    id: number;
-  }
+  Tile
 >();
 
 const tileTextureBuffer = new Map<string, Buffer<ArrayBufferLike>>();

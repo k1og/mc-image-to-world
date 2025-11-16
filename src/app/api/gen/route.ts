@@ -14,6 +14,7 @@ import McData from "minecraft-data";
 
 import sharp, { type OverlayOptions } from "sharp";
 import { tileTextureBufferCache, tileColorsCache } from "../../cache";
+import type { RGB, Tile } from "@/app/types";
 
 const getAverageColor = async (imageBuffer: Buffer<ArrayBuffer>) => {
   const {
@@ -27,13 +28,7 @@ const getAverageColor = async (imageBuffer: Buffer<ArrayBuffer>) => {
 };
 
 const getTileBuffer = async (
-  tile: {
-    averageColor: { r: number; g: number; b: number };
-    name: string;
-    texture: string;
-    textureBuffer: Buffer<ArrayBuffer>;
-    id: number;
-  },
+  tile: Tile,
   width: number,
   height: number
 ) => {
@@ -53,7 +48,7 @@ export async function POST(req: Request) {
   console.time("1");
   const formaData = await req.formData();
   const img = formaData.get("img") as File | null;
-  const mcVersion = (formaData.get("version") as string | null) || "1.29.1";
+  const mcVersion = (formaData.get("version") as string | null) || "1.21.1";
 
   if (!img) {
     return NextResponse.json({ error: "No image provided" }, { status: 400 });
@@ -66,7 +61,7 @@ export async function POST(req: Request) {
   const mcAssets = McAssets(mcVersion);
   const mcData = McData(mcVersion);
   console.timeEnd("init");
-
+  console.log(mcData.version)
   if (!tileColorsCache.size) {
     console.log("Calculating tileColors");
     console.time("Calculating tileColors");
@@ -96,6 +91,7 @@ export async function POST(req: Request) {
         texture,
         textureBuffer,
         id: blockData.id,
+        defaultState: blockData.defaultState,
       });
     });
     console.timeEnd("Calculating tileColors");
@@ -106,15 +102,9 @@ export async function POST(req: Request) {
 
   const composites: Array<OverlayOptions> = [];
 
-  const chunkSize = 25;
+  const chunkSize = 10;
   const blocksToPlace: Array<
-    Array<{
-      averageColor: { r: number; g: number; b: number };
-      name: string;
-      texture: string;
-      textureBuffer: Buffer<ArrayBuffer>;
-      id: number;
-    }>
+    Array<Tile>
   > = [];
 
   const getClosestTileTasks = [];
@@ -142,16 +132,10 @@ export async function POST(req: Request) {
     .toBuffer({ resolveWithObject: true });
 
   const findClosestTile = (
-    closestToColor: { r: number; b: number; g: number },
+    closestToColor: RGB,
     tiles: Map<
       number,
-      {
-        averageColor: { r: number; g: number; b: number };
-        name: string;
-        texture: string;
-        textureBuffer: Buffer<ArrayBuffer>;
-        id: number;
-      }
+      Tile
     >
   ) => {
     let closestColorTile = tiles.values().next().value!;
@@ -249,6 +233,7 @@ export async function POST(req: Request) {
     const BEDROCK = mcData.blocksByName["bedrock"].id;
     const DIRT = mcData.blocksByName["dirt"].id;
     const GRASS = mcData.blocksByName["grass_block"].id;
+    console.log(mcData.blocksByStateId['85'])
     const GRASS_BLOCK_DEFAULT_STATE = 9;
     
     const PLAINS_BIOME = 39;
@@ -258,6 +243,7 @@ export async function POST(req: Request) {
       for (let bx = 0; bx < 16; bx++) {
         for (let bz = 0; bz < 16; bz++) {
           chunk.setBiome(Vec3(bx + x * 16, 3 - 64, bz + z * 16), PLAINS_BIOME)
+
           chunk.setBlockType(Vec3(bx, 0 - 64, bz), BEDROCK);
           chunk.setBlockType(Vec3(bx, 1 - 64, bz), DIRT);
           chunk.setBlockType(Vec3(bx, 2 - 64, bz), DIRT);
