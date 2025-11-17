@@ -153,14 +153,14 @@ export default function Home() {
               disabled={isWorldGenLoading || isImgGenLoading || !file}
               className="flex-1 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
             >
-              {isWorldGenLoading ? "Generating Preview..." : "Preview"}
+              {isImgGenLoading ? "Generating Preview..." : "Preview"}
             </button>
             <button
               type="submit"
               disabled={isWorldGenLoading || isImgGenLoading || !file}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
             >
-              {isImgGenLoading ? "Generating..." : "Generate Map"}
+              {isWorldGenLoading ? "Generating..." : "Generate Map"}
             </button>
           </div>
         </form>
