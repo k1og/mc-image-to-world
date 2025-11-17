@@ -10,7 +10,8 @@ import Image from "next/image";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isWorldGenLoading, setWorldGenIsLoading] = useState<boolean>(false);
+  const [isImgGenLoading, setImgGenIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -23,7 +24,7 @@ export default function Home() {
       return;
     }
 
-    setIsLoading(true);
+    setWorldGenIsLoading(true);
     try {
       const formData = new FormData();
       formData.append("img", file);
@@ -50,7 +51,7 @@ export default function Home() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
-      setIsLoading(false);
+      setWorldGenIsLoading(false);
     }
   };
 
@@ -66,7 +67,7 @@ export default function Home() {
       return;
     }
 
-    setIsLoading(true);
+    setImgGenIsLoading(true);
     setError(null);
     try {
       const formData = new FormData();
@@ -97,7 +98,7 @@ export default function Home() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
-      setIsLoading(false);
+      setImgGenIsLoading(false);
     }
   };
 
@@ -135,7 +136,7 @@ export default function Home() {
               accept="image/*"
               onChange={handleFileChange}
               className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300"
-              disabled={isLoading}
+              disabled={isWorldGenLoading}
             />
           </div>
 
@@ -149,17 +150,17 @@ export default function Home() {
             <button
               type="button"
               onClick={handlePreview}
-              disabled={isLoading || !file}
+              disabled={isWorldGenLoading || isImgGenLoading || !file}
               className="flex-1 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
             >
-              {isLoading ? "Generating Preview..." : "Preview"}
+              {isWorldGenLoading ? "Generating Preview..." : "Preview"}
             </button>
             <button
               type="submit"
-              disabled={isLoading || !file}
+              disabled={isWorldGenLoading || isImgGenLoading || !file}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
             >
-              {isLoading ? "Generating..." : "Generate Map"}
+              {isImgGenLoading ? "Generating..." : "Generate Map"}
             </button>
           </div>
         </form>
