@@ -8,6 +8,10 @@ import McData from "minecraft-data";
 import { initializeTileColors } from "@/lib/tile-initialization";
 import { convertImageToBlocks } from "@/lib/image-to-blocks";
 import { createPreviewImage } from "@/lib/image-processing";
+import {
+  getCachedPreviewImage,
+  setCachedPreviewImage,
+} from "@/app/cache";
 
 const CHUNK_SIZE = 10;
 const DEFAULT_MC_VERSION = "1.21.1";
@@ -27,6 +31,18 @@ export async function POST(req: Request) {
     }
 
     const imgArrayBuffer = await img.arrayBuffer();
+
+    // Check cache first
+    const cachedPreview = getCachedPreviewImage(imgArrayBuffer, mcVersion);
+    if (cachedPreview) {
+      console.log("Using cached preview image");
+      return new NextResponse(Buffer.from(cachedPreview), {
+        headers: {
+          "Content-Type": "image/jpeg",
+          "Content-Disposition": 'inline; filename="preview.jpg"',
+        },
+      });
+    }
 
     // Initialize Minecraft data
     const mcAssets = McAssets(mcVersion);
@@ -59,6 +75,9 @@ export async function POST(req: Request) {
       height,
       composites,
     );
+
+    // Cache the preview image for reuse in /api/gen
+    setCachedPreviewImage(imgArrayBuffer, mcVersion, previewImageBuffer);
 
     return new NextResponse(Buffer.from(previewImageBuffer), {
       headers: {

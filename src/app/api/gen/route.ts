@@ -14,6 +14,7 @@ import { convertImageToBlocks } from "@/lib/image-to-blocks";
 import { createPreviewImage } from "@/lib/image-processing";
 import { generateWorld } from "@/lib/world-generation";
 import { createWorldZip } from "@/lib/zip-creation";
+import { getCachedPreviewImage } from "@/app/cache";
 
 const CHUNK_SIZE = 10;
 const DEFAULT_MC_VERSION = "1.21.1";
@@ -70,13 +71,20 @@ export async function POST(req: Request) {
     });
     console.timeEnd("image-to-blocks");
 
-    // Create preview image
+    // Check if preview image is cached (from /api/preview-image)
     console.time("preview-image");
-    const previewImageBuffer = await createPreviewImage(
-      width,
-      height,
-      composites,
-    );
+    let previewImageBuffer = getCachedPreviewImage(imgArrayBuffer, mcVersion);
+    if (!previewImageBuffer) {
+      // Not cached, generate it
+      console.log("Preview not cached, generating...");
+      previewImageBuffer = await createPreviewImage(
+        width,
+        height,
+        composites,
+      );
+    } else {
+      console.log("Using cached preview image");
+    }
     console.timeEnd("preview-image");
 
     // Initialize world generation
