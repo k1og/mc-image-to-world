@@ -1,23 +1,15 @@
 import type { PCChunk } from "prismarine-chunk";
 import type { Tile } from "@/app/types";
 import Vec3 from "vec3";
-import type { Buffer } from "node:buffer";
-
-interface AnvilInstance {
-  save: (x: number, z: number, chunk: PCChunk) => Promise<void>;
-  getAllRegions: () => Array<{
-    getName: () => string;
-    getBuffer: () => Buffer;
-  }>;
-}
+import prismarineProvider from "../libs/provider";
 
 interface BlockData {
   id: number;
 }
 
 export interface WorldGenerationOptions {
-  Chunk: typeof PCChunk;
-  Anvil: new () => AnvilInstance;
+  chunk: PCChunk;
+  anvil: InstanceType<ReturnType<typeof prismarineProvider.Anvil>>;
   mcData: {
     blocksByName: Record<string, BlockData>;
   };
@@ -30,7 +22,7 @@ export interface WorldGenerationOptions {
 export async function generateWorld(
   options: WorldGenerationOptions,
 ): Promise<void> {
-  const { Chunk, Anvil, mcData, blocksToPlace } = options;
+  const { chunk, anvil, mcData, blocksToPlace } = options;
 
   const BEDROCK = mcData.blocksByName["bedrock"]?.id;
   const DIRT = mcData.blocksByName["dirt"]?.id;
@@ -40,9 +32,6 @@ export async function generateWorld(
   if (!BEDROCK || !DIRT) {
     throw new Error("Required blocks (bedrock, dirt) not found in mcData");
   }
-
-  const anvil = new Anvil();
-  const chunk = new Chunk(null);
 
   async function createSuperflatChunk(x: number, z: number): Promise<void> {
     for (let bx = 0; bx < 16; bx++) {
@@ -70,13 +59,10 @@ export async function generateWorld(
     await anvil.save(x, z, chunk);
   }
 
-  const chunkPromises: Array<Promise<void>> = [];
   for (let x = 0; x < 8; x++) {
     for (let z = 0; z < 8; z++) {
-      chunkPromises.push(createSuperflatChunk(x, z));
+      await createSuperflatChunk(x, z);
     }
   }
-
-  await Promise.all(chunkPromises);
 }
 

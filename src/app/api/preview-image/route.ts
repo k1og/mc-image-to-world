@@ -49,17 +49,7 @@ export async function POST(req: Request) {
     const mcData = McData(mcVersion);
     await initializeTileColors(mcAssets, mcData);
 
-    // Get image dimensions
-    const metadata = await sharp(imgArrayBuffer).metadata();
-    const width = metadata.width ?? 0;
-    const height = metadata.height ?? 0;
-
-    if (width === 0 || height === 0) {
-      return NextResponse.json(
-        { error: "Invalid image dimensions" },
-        { status: 400 },
-      );
-    }
+    const { width, height } = await sharp(imgArrayBuffer).metadata();
 
     // Convert image to blocks
     const { composites } = await convertImageToBlocks({

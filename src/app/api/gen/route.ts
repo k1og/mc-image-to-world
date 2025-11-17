@@ -18,7 +18,6 @@ import { getCachedPreviewImage } from "@/app/cache";
 
 const CHUNK_SIZE = 10;
 const DEFAULT_MC_VERSION = "1.21.1";
-const WORLD_SIZE_CHUNKS = 8;
 
 export async function POST(req: Request) {
   try {
@@ -48,18 +47,8 @@ export async function POST(req: Request) {
     await initializeTileColors(mcAssets, mcData);
     console.timeEnd("init-mc-data");
 
-    // Get image dimensions
     const targetImage = sharp(imgArrayBuffer);
-    const metadata = await targetImage.metadata();
-    const width = metadata.width ?? 0;
-    const height = metadata.height ?? 0;
-
-    if (width === 0 || height === 0) {
-      return NextResponse.json(
-        { error: "Invalid image dimensions" },
-        { status: 400 },
-      );
-    }
+    const { width, height } = await targetImage.metadata();
 
     // Convert image to blocks
     console.time("image-to-blocks");
@@ -96,12 +85,15 @@ export async function POST(req: Request) {
     // Generate world
     console.time("generate-world");
     const anvil = new Anvil();
+    const chunk = new Chunk(null);
+
     await generateWorld({
-      Chunk,
-      Anvil,
+      anvil,
+      chunk,
       mcData,
       blocksToPlace,
     });
+    
     console.timeEnd("generate-world");
 
     // Read level.dat
