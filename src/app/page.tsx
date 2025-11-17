@@ -37,7 +37,7 @@ export default function Home() {
       const a = document.createElement("a");
       a.href = url;
       a.download = "map.zip";
-      // a.click();
+      a.click();
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
