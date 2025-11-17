@@ -1,11 +1,18 @@
 "use client";
 
-import { type ChangeEventHandler, type FormEventHandler, useState } from "react";
+import {
+  type ChangeEventHandler,
+  type FormEventHandler,
+  useState,
+  useEffect,
+} from "react";
+import Image from "next/image";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const handleFormSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
@@ -50,17 +57,70 @@ export default function Home() {
   const handleFileChange: ChangeEventHandler<HTMLInputElement> = (event) => {
     setFile(event.target.files?.[0] || null);
     setError(null);
+    setPreviewUrl(null); // Clear preview when file changes
   };
 
-  return (
-    <div className="font-sans min-h-screen p-8 pb-20 gap-16 sm:p-20 flex items-center justify-center">
-      <main className="flex flex-col gap-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-center">Minecraft Image Map Generator</h1>
-        <p className="text-center text-gray-600 dark:text-gray-400">
-          Convert your images into Minecraft world
-        </p>
+  const handlePreview = async () => {
+    if (!file) {
+      setError("Please select an image file first");
+      return;
+    }
 
-        <form onSubmit={handleFormSubmit} className="flex flex-col gap-4">
+    setIsLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append("img", file);
+      formData.append("version", "1.20.1");
+
+      const res = await fetch("/api/preview-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({
+          error: "Unknown error",
+        }));
+        throw new Error(errorData.error || "Failed to generate preview");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      
+      // Clean up previous preview URL if exists
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      
+      setPreviewUrl(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  return (
+    <div className="font-sans min-h-screen p-8 pb-20 gap-16 sm:p-20">
+      <main className="flex flex-col gap-8 max-w-7xl mx-auto w-full">
+        <div className="max-w-md mx-auto w-full">
+          <h1 className="text-3xl font-bold text-center">Minecraft Image Map Generator</h1>
+          <p className="text-center text-gray-600 dark:text-gray-400">
+            Convert your images into Minecraft world
+          </p>
+        </div>
+
+        <form onSubmit={handleFormSubmit} className="flex flex-col gap-4 max-w-md mx-auto w-full">
           <div>
             <label
               htmlFor="file"
@@ -85,14 +145,40 @@ export default function Home() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={isLoading || !file}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
-          >
-            {isLoading ? "Generating..." : "Generate Map"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handlePreview}
+              disabled={isLoading || !file}
+              className="flex-1 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
+            >
+              {isLoading ? "Generating Preview..." : "Preview"}
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading || !file}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
+            >
+              {isLoading ? "Generating..." : "Generate Map"}
+            </button>
+          </div>
         </form>
+
+        {previewUrl && (
+          <div className="mt-8 w-full">
+            <h2 className="text-xl font-semibold mb-4 text-center">Preview</h2>
+            <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-lg">
+              <Image
+                src={previewUrl}
+                alt="Minecraft world preview"
+                width={1920}
+                height={1080}
+                className="w-full h-auto max-h-[80vh] object-contain"
+                unoptimized
+              />
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
