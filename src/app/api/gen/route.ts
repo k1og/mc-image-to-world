@@ -1,304 +1,134 @@
-import JSZip from "jszip";
-
 import { NextResponse } from "next/server";
-
 import path from "node:path";
 import fs from "node:fs/promises";
 
 import prismarineChunk, { type PCChunk } from "prismarine-chunk";
 import prismarineProvider from "../../../libs/provider";
-import Vec3 from "vec3";
-// @ts-expect-error
+// @ts-expect-error - minecraft-assets doesn't have type definitions
 import McAssets from "minecraft-assets";
 import McData from "minecraft-data";
 
-import sharp, { type OverlayOptions } from "sharp";
-import { tileTextureBufferCache, tileColorsCache } from "../../cache";
-import type { RGB, Tile } from "@/app/types";
+import sharp from "sharp";
+import { initializeTileColors } from "@/lib/tile-initialization";
+import { convertImageToBlocks } from "@/lib/image-to-blocks";
+import { createPreviewImage } from "@/lib/image-processing";
+import { generateWorld } from "@/lib/world-generation";
+import { createWorldZip } from "@/lib/zip-creation";
 
-const getAverageColor = async (imageBuffer: Buffer<ArrayBuffer>) => {
-  const {
-    data: [r, g, b],
-  } = await sharp(imageBuffer)
-    .resize(1, 1, { fit: "cover" })
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  return { r, g, b };
-};
-
-const getTileBuffer = async (
-  tile: Tile,
-  width: number,
-  height: number
-) => {
-  const key = `${tile.id}-${width}-${height}`;
-  if (!tileTextureBufferCache.has(key)) {
-    const buf = await sharp(tile.textureBuffer)
-      .resize(width, height)
-      .toBuffer();
-    tileTextureBufferCache.set(key, buf);
-  }
-
-  return tileTextureBufferCache.get(key)!;
-};
+const CHUNK_SIZE = 10;
+const DEFAULT_MC_VERSION = "1.21.1";
+const WORLD_SIZE_CHUNKS = 8;
 
 export async function POST(req: Request) {
-  console.time("whole");
-  console.time("1");
-  const formaData = await req.formData();
-  const img = formaData.get("img") as File | null;
-  const mcVersion = (formaData.get("version") as string | null) || "1.21.1";
+  try {
+    console.time("whole");
 
-  if (!img) {
-    return NextResponse.json({ error: "No image provided" }, { status: 400 });
-  }
+    // Parse form data
+    console.time("parse-form");
+    const formData = await req.formData();
+    const img = formData.get("img") as File | null;
+    const mcVersion =
+      (formData.get("version") as string | null) || DEFAULT_MC_VERSION;
 
-  const imgArrayBuffer = await img.arrayBuffer();
-  console.timeEnd("1");
-
-  console.time("init");
-  const mcAssets = McAssets(mcVersion);
-  const mcData = McData(mcVersion);
-  console.timeEnd("init");
-  console.log(mcData.version)
-  if (!tileColorsCache.size) {
-    console.log("Calculating tileColors");
-    console.time("Calculating tileColors");
-    (
-      Object.values(mcAssets.textureContent) as Array<{
-        name: string;
-        texture: string | null;
-      }>
-    ).map(async ({ texture, name }) => {
-      if (!texture) {
-        return;
-      }
-
-      const blockData = mcData.blocksByName[name];
-      if (!blockData || blockData.boundingBox === "empty") {
-        return;
-      }
-
-      const textureBuffer = Buffer.from(
-        texture.replace(/^data:image\/\w+;base64,/, ""),
-        "base64"
-      );
-      const { r, g, b } = await getAverageColor(textureBuffer);
-      tileColorsCache.set(blockData.id, {
-        averageColor: { r, g, b },
-        name,
-        texture,
-        textureBuffer,
-        id: blockData.id,
-        defaultState: blockData.defaultState,
-      });
-    });
-    console.timeEnd("Calculating tileColors");
-  }
-
-  const targetImage = sharp(imgArrayBuffer);
-  const { width, height } = await targetImage.metadata();
-
-  const composites: Array<OverlayOptions> = [];
-
-  const chunkSize = 10;
-  const blocksToPlace: Array<
-    Array<Tile>
-  > = [];
-
-  const getClosestTileTasks = [];
-  console.time("main loop");
-
-  const downsampleWidth = Math.ceil(width / chunkSize);
-  const downsampleHeight = Math.ceil(height / chunkSize);
-
-  const getPixelColor = (
-    x: number,
-    y: number,
-    width: number,
-    channels: number = 3
-  ) => {
-    const offset = channels * (width * y + x);
-    const r = data[offset];
-    const g = data[offset + 1];
-    const b = data[offset + 2];
-    return { r, g, b };
-  };
-
-  const { data, info } = await targetImage
-    .resize(downsampleWidth, downsampleHeight)
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  const findClosestTile = (
-    closestToColor: RGB,
-    tiles: Map<
-      number,
-      Tile
-    >
-  ) => {
-    let closestColorTile = tiles.values().next().value!;
-    let closestColorVal = Infinity;
-
-    for (const [_, color] of tileColorsCache) {
-      const {
-        averageColor: { r, g, b },
-      } = color;
-      const val =
-        Math.abs(r - closestToColor.r) +
-        Math.abs(g - closestToColor.g) +
-        Math.abs(b - closestToColor.b);
-      if (val < closestColorVal) {
-        closestColorVal = val;
-        closestColorTile = color;
-      }
-    }
-
-    return closestColorTile;
-  };
-
-  for (let y = 0; y < downsampleHeight; y++) {
-    for (let x = 0; x < downsampleWidth; x++) {
-      getClosestTileTasks.push(
-        (async () => {
-          const { r, b, g } = getPixelColor(
-            x,
-            y,
-            downsampleWidth,
-            info.channels
-          );
-
-          const averageColor = { r, g, b };
-
-          const closestColorTile = findClosestTile(
-            averageColor,
-            tileColorsCache
-          );
-
-          const closestTileBuffer = await getTileBuffer(
-            closestColorTile,
-            chunkSize,
-            chunkSize
-          );
-
-          if (!blocksToPlace[x]) {
-            blocksToPlace[x] = [];
-          }
-          blocksToPlace[x][y] = closestColorTile;
-
-          composites.push({
-            input: closestTileBuffer,
-            left: x * chunkSize,
-            top: y * chunkSize,
-          });
-        })()
+    if (!img) {
+      return NextResponse.json(
+        { error: "No image provided" },
+        { status: 400 },
       );
     }
-  }
-  // maybe add p-limit
-  await Promise.all(getClosestTileTasks);
-  console.timeEnd("main loop");
 
-  console.time("final image");
-  const finalImageBuffer = await sharp({
-    create: {
+    const imgArrayBuffer = await img.arrayBuffer();
+    console.timeEnd("parse-form");
+
+    // Initialize Minecraft data
+    console.time("init-mc-data");
+    const mcAssets = McAssets(mcVersion);
+    const mcData = McData(mcVersion);
+    await initializeTileColors(mcAssets, mcData);
+    console.timeEnd("init-mc-data");
+
+    // Get image dimensions
+    const targetImage = sharp(imgArrayBuffer);
+    const metadata = await targetImage.metadata();
+    const width = metadata.width ?? 0;
+    const height = metadata.height ?? 0;
+
+    if (width === 0 || height === 0) {
+      return NextResponse.json(
+        { error: "Invalid image dimensions" },
+        { status: 400 },
+      );
+    }
+
+    // Convert image to blocks
+    console.time("image-to-blocks");
+    const { blocksToPlace, composites } = await convertImageToBlocks({
+      imageBuffer: imgArrayBuffer,
+      chunkSize: CHUNK_SIZE,
       width,
       height,
-      channels: 3,
-      background: {
-        r: 255,
-        g: 255,
-        b: 255,
+    });
+    console.timeEnd("image-to-blocks");
+
+    // Create preview image
+    console.time("preview-image");
+    const previewImageBuffer = await createPreviewImage(
+      width,
+      height,
+      composites,
+    );
+    console.timeEnd("preview-image");
+
+    // Initialize world generation
+    console.time("init-world-gen");
+    const Chunk = prismarineChunk(mcVersion) as unknown as typeof PCChunk;
+    const Anvil = prismarineProvider.Anvil(mcVersion);
+    console.timeEnd("init-world-gen");
+
+    // Generate world
+    console.time("generate-world");
+    const anvil = new Anvil();
+    await generateWorld({
+      Chunk,
+      Anvil,
+      mcData,
+      blocksToPlace,
+    });
+    console.timeEnd("generate-world");
+
+    // Read level.dat
+    const levelDatPath = path.join(process.cwd(), "src/data/level.dat");
+    const levelDatBuffer = await fs.readFile(levelDatPath);
+
+    // Create ZIP file
+    console.time("create-zip");
+    const zipBuffer = await createWorldZip({
+      originalImage: {
+        name: img.name,
+        buffer: imgArrayBuffer,
       },
-    },
-  })
-    .composite(composites)
-    .jpeg()
-    .toBuffer();
-  console.timeEnd("final image");
+      previewImage: previewImageBuffer,
+      levelDat: levelDatBuffer,
+      regions: anvil.getAllRegions(),
+    });
+    console.timeEnd("create-zip");
 
-  console.time("init gen world");
-  const Chunk = prismarineChunk(mcVersion) as unknown as typeof PCChunk;
-  const Anvil = prismarineProvider.Anvil(mcVersion);
+    console.timeEnd("whole");
 
-  // Create Anvil provider (handles region files)
-  const anvil = new Anvil();
-  const chunk = new Chunk(null);
-  console.timeEnd("init gen world");
-
-  // Generate small flat world
-  async function generateWorld() {
-    // Block IDs for superflat
-    const BEDROCK = mcData.blocksByName["bedrock"].id;
-    const DIRT = mcData.blocksByName["dirt"].id;
-    const GRASS = mcData.blocksByName["grass_block"].id;
-    console.log(mcData.blocksByStateId['85'])
-    const GRASS_BLOCK_DEFAULT_STATE = 9;
-    
-    const PLAINS_BIOME = 39;
-
-    // Generate one chunk
-    async function createSuperflatChunk(x: number, z: number) {
-      for (let bx = 0; bx < 16; bx++) {
-        for (let bz = 0; bz < 16; bz++) {
-          chunk.setBiome(Vec3(bx + x * 16, 3 - 64, bz + z * 16), PLAINS_BIOME)
-
-          chunk.setBlockType(Vec3(bx, 0 - 64, bz), BEDROCK);
-          chunk.setBlockType(Vec3(bx, 1 - 64, bz), DIRT);
-          chunk.setBlockType(Vec3(bx, 2 - 64, bz), DIRT);
-          
-          const blockToPlace = blocksToPlace[16 * x + bx]?.[16 * z + bz]?.id
-          const blockToPlaceVec3 = Vec3(bx, 3 - 64, bz)
-          if (blockToPlace) {
-            chunk.setBlockType(
-              blockToPlaceVec3,
-              blockToPlace
-            );
-          } else {
-            chunk.setBlockStateId(blockToPlaceVec3, GRASS_BLOCK_DEFAULT_STATE)
-          }
-        }
-      }
-
-      await anvil.save(x, z, chunk);
-    }
-
-    for (let x = 0; x < 8; x++) {
-      for (let z = 0; z < 8; z++) {
-        await createSuperflatChunk(x, z);
-      }
-    }
+    return new NextResponse(Buffer.from(zipBuffer), {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": 'attachment; filename="map.zip"',
+      },
+    });
+  } catch (error) {
+    console.error("Error generating map:", error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to generate map",
+      },
+      { status: 500 },
+    );
   }
-
-  const levelDatPath = path.join(process.cwd(), "src/data/level.dat");
-  const levelDatBuffer = await fs.readFile(levelDatPath);
-
-  console.time("gen world");
-  await generateWorld();
-  console.timeEnd("gen world");
-
-  console.time("zip");
-  const zip = new JSZip();
-
-  zip.file(img.name, imgArrayBuffer);
-  zip.file("preview.jpg", finalImageBuffer);
-  const zipWorldFolder = zip.folder("image_world");
-  zipWorldFolder!.file("level.dat", levelDatBuffer);
-  const zipRegionWorldFolder = zipWorldFolder!.folder("region");
-
-  anvil.getAllRegions().forEach((region) => {
-    zipRegionWorldFolder!.file(region.getName(), region.getBuffer());
-  });
-
-  const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
-  console.timeEnd("zip");
-  console.timeEnd("whole");
-
-  return new NextResponse(zipBuffer, {
-    headers: {
-      "Content-Type": "application/zip",
-      "Content-Disposition": 'attachment; filename="map.zip"',
-    },
-  });
 }

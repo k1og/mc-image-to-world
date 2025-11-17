@@ -1,21 +1,24 @@
 import type { Tile } from "./types";
+import type { Buffer } from "node:buffer";
 
-const tileColors = new Map<
-  number,
-  Tile
->();
+const tileColors = new Map<number, Tile>();
+const tileTextureBuffer = new Map<string, Buffer>();
 
-const tileTextureBuffer = new Map<string, Buffer<ArrayBufferLike>>();
-
-const globalForTileColorsCache = global as unknown as { tileColorsCache: typeof tileColors }
-
-export const tileColorsCache = globalForTileColorsCache.tileColorsCache ?? tileColors
-if (!globalForTileColorsCache.tileColorsCache) {
-  globalForTileColorsCache.tileColorsCache = tileColors
+interface GlobalCache {
+  tileColorsCache: Map<number, Tile>;
+  tileTextureBufferCache: Map<string, Buffer>;
 }
 
-const globalForTileTextureBufferCache = global as unknown as { tileTextureBufferCache: typeof tileTextureBuffer }
-export const tileTextureBufferCache = globalForTileTextureBufferCache.tileTextureBufferCache ?? tileTextureBuffer
-if (!globalForTileTextureBufferCache.tileTextureBufferCache) {
-  globalForTileTextureBufferCache.tileTextureBufferCache = tileTextureBuffer
+const globalForCache = global as unknown as GlobalCache;
+
+export const tileColorsCache =
+  globalForCache.tileColorsCache ?? tileColors;
+if (!globalForCache.tileColorsCache) {
+  globalForCache.tileColorsCache = tileColors;
+}
+
+export const tileTextureBufferCache =
+  globalForCache.tileTextureBufferCache ?? tileTextureBuffer;
+if (!globalForCache.tileTextureBufferCache) {
+  globalForCache.tileTextureBufferCache = tileTextureBuffer;
 }

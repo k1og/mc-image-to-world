@@ -1,12 +1,9 @@
 import { tileColorsCache } from "../../cache";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
-
-  return new NextResponse(tileColorsCache.size.toString(), {
-    headers: {
-      // "Content-Type": "application/zip",
-      // "Content-Disposition": 'attachment; filename="map.jpg"',
-    },
+export async function POST() {
+  return NextResponse.json({
+    cacheSize: tileColorsCache.size,
+    initialized: tileColorsCache.size > 0,
   });
 }
