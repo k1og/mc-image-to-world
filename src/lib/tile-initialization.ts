@@ -1,6 +1,6 @@
-import type { Tile } from "@/app/types";
 import { tileColorsCache } from "@/app/cache";
 import { getAverageColor } from "./image-processing";
+import McData from "minecraft-data";
 
 /**
  * Initializes the tile colors cache from Minecraft assets
@@ -10,19 +10,11 @@ interface TextureContent {
   texture: string | null;
 }
 
-interface BlockData {
-  id: number;
-  defaultState: number;
-  boundingBox: string;
-}
-
 export async function initializeTileColors(
   mcAssets: {
     textureContent: Record<string, TextureContent>;
   },
-  mcData: {
-    blocksByName: Record<string, BlockData>;
-  },
+  mcData: McData.IndexedData
 ): Promise<void> {
   if (tileColorsCache.size > 0) {
     return; // Already initialized
@@ -33,9 +25,9 @@ export async function initializeTileColors(
       if (!texture) {
         return;
       }
-
+    
       const blockData = mcData.blocksByName[name];
-      if (!blockData || blockData.boundingBox === "empty") {
+      if (!blockData || blockData.boundingBox === "empty" || blockData.transparent) {
         return;
       }
 

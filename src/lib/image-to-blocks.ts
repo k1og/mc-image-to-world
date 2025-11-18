@@ -65,6 +65,23 @@ export async function convertImageToBlocks(
             left: x * chunkSize,
             top: y * chunkSize,
           });
+
+          // DEBUG:
+          // composites.push({input: Buffer.from(`<svg width="${chunkSize}" height="${chunkSize}">
+          //              <style>
+          //                .text { 
+          //                  font-family: Arial; 
+          //                  font-size: ${Math.trunc(chunkSize/2)}px; 
+          //                  fill: black; 
+          //                  text-anchor: middle; 
+          //                  dominant-baseline: middle;
+          //                }
+          //              </style>
+          //              <text x="50%" y="50%" class="text">${closestTile.id}</text>
+          //            </svg>`),
+                    
+          //   left: x * chunkSize,
+          //   top: y * chunkSize,})
         })(),
       );
     }
