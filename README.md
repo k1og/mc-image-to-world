@@ -11,6 +11,15 @@ Convert your images into Minecraft worlds! This Next.js application takes any im
 - ⚡ **Fast Processing**: Optimized image processing pipeline for quick generation
 - 🎮 **Multiple Versions**: Supports multiple Minecraft versions (default: 1.21.1)
 
+## Examples
+![preview](examples/preview.png)
+![original](examples/original.jpg)
+
+<br>
+
+![preview2](examples/preview2.png)
+![original2](examples/original2.jpg)
+
 ## Tech Stack
 
 - **Framework**: Next.js 15.5.5 with App Router
