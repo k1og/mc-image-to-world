@@ -7,7 +7,7 @@ interface BlockData {
   id: number;
 }
 
-export interface WorldGenerationOptions {
+interface WorldGenerationOptions {
   chunk: PCChunk;
   anvil: InstanceType<ReturnType<typeof prismarineProviderImMemory.Anvil>>;
   mcData: {

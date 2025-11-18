@@ -12,9 +12,7 @@ import {
   getCachedPreviewImage,
   setCachedPreviewImage,
 } from "@/app/cache";
-
-const CHUNK_SIZE = 10;
-const DEFAULT_MC_VERSION = "1.21.1";
+import { DEFAULT_MC_VERSION, CHUNK_SIZE } from "@/app/constants";
 
 export async function POST(req: Request) {
   try {

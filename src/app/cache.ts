@@ -68,6 +68,11 @@ export function setCachedPreviewImage(
   const key = getPreviewCacheKey(imageBuffer, mcVersion);
   previewImageCache.set(key, previewBuffer);
   
+  // Remove cached preview after a two minutes
+  setTimeout(() => {
+    previewImageCache.delete(key);
+  }, 120000);
+  
   // Limit cache size to prevent memory issues (keep last 10 entries)
   if (previewImageCache.size > 10) {
     const firstKey = previewImageCache.keys().next().value;

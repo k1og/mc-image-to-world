@@ -15,9 +15,7 @@ import { createPreviewImage } from "@/lib/image-processing";
 import { generateWorld } from "@/lib/world-generation";
 import { createWorldZip } from "@/lib/zip-creation";
 import { getCachedPreviewImage } from "@/app/cache";
-
-const CHUNK_SIZE = 10;
-const DEFAULT_MC_VERSION = "1.21.1";
+import { DEFAULT_MC_VERSION, CHUNK_SIZE } from "@/app/constants";
 
 export async function POST(req: Request) {
   try {
