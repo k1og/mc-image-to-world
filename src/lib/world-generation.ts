@@ -61,8 +61,8 @@ export async function generateWorld(
   }
 
   const chunkPromises: Array<Promise<void>> = [];
-  for (let x = 0; x < 8; x++) {
-    for (let z = 0; z < 8; z++) {
+  for (let x = 0; x < Math.ceil(blocksToPlace.length / 16); x++) {
+    for (let z = 0; z < Math.ceil(blocksToPlace[0].length / 16); z++) {
       chunkPromises.push(createSuperflatChunk(x, z));
     }
   }

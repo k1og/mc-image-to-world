@@ -32,7 +32,7 @@ export async function convertImageToBlocks(
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  const blocksToPlace: Array<Array<Tile | undefined>> = [];
+  const blocksToPlace: Array<Array<Tile | undefined>> = [[]];
   const composites: Array<OverlayOptions> = [];
   const processingTasks: Array<Promise<void>> = [];
 
