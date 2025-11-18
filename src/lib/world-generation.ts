@@ -1,7 +1,7 @@
 import type { PCChunk } from "prismarine-chunk";
 import type { Tile } from "@/app/types";
 import Vec3 from "vec3";
-import prismarineProviderImMemory from "../libs/provider";
+import prismarineProviderImMemory from "prismarine-provider-anvil-in-memory";
 
 interface BlockData {
   id: number;

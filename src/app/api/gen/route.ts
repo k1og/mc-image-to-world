@@ -3,7 +3,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 
 import prismarineChunk, { type PCChunk } from "prismarine-chunk";
-import prismarineProviderInMemory from "../../../libs/provider";
+import prismarineProviderInMemory from "prismarine-provider-anvil-in-memory";
 // @ts-expect-error - minecraft-assets doesn't have type definitions
 import McAssets from "minecraft-assets";
 import McData from "minecraft-data";
