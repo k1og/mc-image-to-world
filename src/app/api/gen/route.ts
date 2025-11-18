@@ -3,7 +3,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 
 import prismarineChunk, { type PCChunk } from "prismarine-chunk";
-import prismarineProvider from "../../../libs/provider";
+import prismarineProviderInMemory from "../../../libs/provider";
 // @ts-expect-error - minecraft-assets doesn't have type definitions
 import McAssets from "minecraft-assets";
 import McData from "minecraft-data";
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     // Initialize world generation
     console.time("init-world-gen");
     const Chunk = prismarineChunk(mcVersion) as unknown as typeof PCChunk;
-    const Anvil = prismarineProvider.Anvil(mcVersion);
+    const Anvil = prismarineProviderInMemory.Anvil(mcVersion);
     console.timeEnd("init-world-gen");
 
     // Generate world

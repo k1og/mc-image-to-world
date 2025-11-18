@@ -1,7 +1,7 @@
 import type { PCChunk } from "prismarine-chunk";
 import type { Tile } from "@/app/types";
 import Vec3 from "vec3";
-import prismarineProvider from "../libs/provider";
+import prismarineProviderImMemory from "../libs/provider";
 
 interface BlockData {
   id: number;
@@ -9,7 +9,7 @@ interface BlockData {
 
 export interface WorldGenerationOptions {
   chunk: PCChunk;
-  anvil: InstanceType<ReturnType<typeof prismarineProvider.Anvil>>;
+  anvil: InstanceType<ReturnType<typeof prismarineProviderImMemory.Anvil>>;
   mcData: {
     blocksByName: Record<string, BlockData>;
   };
@@ -26,6 +26,7 @@ export async function generateWorld(
 
   const BEDROCK = mcData.blocksByName["bedrock"]?.id;
   const DIRT = mcData.blocksByName["dirt"]?.id;
+  const WHITE_WOOL = mcData.blocksByName["white_wool"]?.id;
   const GRASS_BLOCK_DEFAULT_STATE = 9;
   const PLAINS_BIOME = 39;
 
@@ -43,7 +44,7 @@ export async function generateWorld(
 
         chunk.setBlockType(Vec3(bx, 0 - 64, bz), BEDROCK);
         chunk.setBlockType(Vec3(bx, 1 - 64, bz), DIRT);
-        chunk.setBlockType(Vec3(bx, 2 - 64, bz), DIRT);
+        chunk.setBlockType(Vec3(bx, 2 - 64, bz), WHITE_WOOL);
 
         const blockToPlace = blocksToPlace[16 * x + bx]?.[16 * z + bz];
         const blockToPlaceVec3 = Vec3(bx, 3 - 64, bz);
@@ -59,10 +60,13 @@ export async function generateWorld(
     await anvil.save(x, z, chunk);
   }
 
+  const chunkPromises: Array<Promise<void>> = [];
   for (let x = 0; x < 8; x++) {
     for (let z = 0; z < 8; z++) {
-      await createSuperflatChunk(x, z);
+      chunkPromises.push(createSuperflatChunk(x, z));
     }
   }
+
+  await Promise.all(chunkPromises);
 }
 
