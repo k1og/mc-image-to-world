@@ -1,7 +1,7 @@
 import sharp, { type OverlayOptions } from "sharp";
 import type { RGB, Tile } from "@/app/types";
 import { findClosestTile } from "./color-matching";
-import { getPixelColor, getTileBuffer } from "./image-processing";
+import { getPixelColor, getResizedTileBuffer } from "./image-processing";
 
 interface ImageToBlocksOptions {
   imageBuffer: ArrayBuffer;
@@ -49,7 +49,7 @@ export async function convertImageToBlocks(
           );
 
           const closestTile = findClosestTile(pixelColor);
-          const tileBuffer = await getTileBuffer(
+          const tileBuffer = await getResizedTileBuffer(
             closestTile,
             chunkSize,
             chunkSize,

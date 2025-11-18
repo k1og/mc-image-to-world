@@ -21,7 +21,7 @@ export async function getAverageColor(
 /**
  * Gets or creates a resized tile buffer with caching
  */
-export async function getTileBuffer(
+export async function getResizedTileBuffer(
   tile: Tile,
   width: number,
   height: number,
