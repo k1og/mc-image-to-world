@@ -13,12 +13,8 @@ Convert your images into Minecraft worlds! This Next.js application takes any im
 
 ## Examples
 ![preview](examples/preview.png)
-![original](examples/original.jpg)
-
-<br>
-
 ![preview2](examples/preview2.png)
-![original2](examples/original2.jpg)
+
 
 ## Tech Stack
 
