@@ -56,9 +56,12 @@ export default function Home() {
   };
 
   const handleFileChange: ChangeEventHandler<HTMLInputElement> = (event) => {
-    setFile(event.target.files?.[0] || null);
+    if (!event.target.files?.[0]) {
+      return
+    }
+    setFile(event.target.files?.[0]);
     setError(null);
-    setPreviewUrl(null); // Clear preview when file changes
+    setPreviewUrl(null);
   };
 
   const handlePreview = async () => {
@@ -88,7 +91,7 @@ export default function Home() {
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      
+
       // Clean up previous preview URL if exists
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
@@ -104,10 +107,16 @@ export default function Home() {
 
   // Cleanup preview URL on unmount
   useEffect(() => {
+    if (!previewUrl) {
+      return
+    }
+
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
+      if (!previewUrl) {
+        return
       }
+      URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
 
