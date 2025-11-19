@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         
         // const factor = 1;
         // for (let y = 0; y < height - 1; y++) {
-        //     for (let x = 0; x < width - 1; x++) {
+        //     for (let x = 1; x < width - 1; x++) {
         //         const oldPixel = vec3(
         //             newRawBuffer[getIndex(x, y)    ], 
         //             newRawBuffer[getIndex(x, y) + 1], 
