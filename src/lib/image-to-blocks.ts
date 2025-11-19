@@ -27,7 +27,7 @@ export async function convertImageToBlocks(
   const downsampleHeight = Math.ceil(height / chunkSize);
 
   const { data, info } = await image
-    .resize(downsampleWidth, downsampleHeight, { kernel: sharp.kernel.nearest })
+    .resize(downsampleWidth, downsampleHeight, { kernel: 'nearest' })
     .raw()
     .toBuffer({ resolveWithObject: true });
 

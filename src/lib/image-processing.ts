@@ -11,7 +11,7 @@ export async function getAverageColor(
   const {
     data: [r, g, b],
   } = await sharp(imageBuffer)
-    .resize(1, 1, { fit: "cover" })
+    .resize(1, 1, { fit: "fill", kernel: 'nearest' })
     .raw()
     .toBuffer({ resolveWithObject: true });
 
@@ -29,7 +29,7 @@ export async function getResizedTileBuffer(
   const key = `${tile.id}-${width}-${height}`;
   if (!tileTextureBufferCache.has(key)) {
     const buf = await sharp(tile.textureBuffer)
-      .resize(width, height)
+      .resize(width, height, { kernel: 'nearest' })
       .toBuffer();
     tileTextureBufferCache.set(key, buf);
   }
