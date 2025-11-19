@@ -47,11 +47,12 @@ export async function POST(req: Request) {
     const mcData = McData(mcVersion);
     await initializeTileColors(mcAssets, mcData);
 
+    const targetImage = sharp(imgArrayBuffer)
     const { width, height } = await sharp(imgArrayBuffer).metadata();
 
     // Convert image to blocks
     const { composites } = await convertImageToBlocks({
-      imageBuffer: imgArrayBuffer,
+      image: targetImage,
       chunkSize: CHUNK_SIZE,
       width,
       height,

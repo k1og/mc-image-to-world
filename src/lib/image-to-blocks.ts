@@ -1,10 +1,10 @@
-import sharp, { type OverlayOptions } from "sharp";
+import sharp, { type OverlayOptions, type Sharp } from "sharp";
 import type { RGB, Tile } from "@/app/types";
 import { findClosestTile } from "./color-matching";
 import { getPixelColor, getResizedTileBuffer } from "./image-processing";
 
 interface ImageToBlocksOptions {
-  imageBuffer: ArrayBuffer;
+  image: Sharp;
   chunkSize: number;
   width: number;
   height: number;
@@ -21,14 +21,13 @@ interface ImageToBlocksResult {
 export async function convertImageToBlocks(
   options: ImageToBlocksOptions,
 ): Promise<ImageToBlocksResult> {
-  const { imageBuffer, chunkSize, width, height } = options;
+  const { image, chunkSize, width, height } = options;
 
   const downsampleWidth = Math.ceil(width / chunkSize);
   const downsampleHeight = Math.ceil(height / chunkSize);
 
-  const targetImage = sharp(imageBuffer);
-  const { data, info } = await targetImage
-    .resize(downsampleWidth, downsampleHeight)
+  const { data, info } = await image
+    .resize(downsampleWidth, downsampleHeight, { kernel: sharp.kernel.nearest })
     .raw()
     .toBuffer({ resolveWithObject: true });
 

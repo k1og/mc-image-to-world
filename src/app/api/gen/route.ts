@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     // Convert image to blocks
     console.time("image-to-blocks");
     const { blocksToPlace, composites } = await convertImageToBlocks({
-      imageBuffer: imgArrayBuffer,
+      image: targetImage,
       chunkSize: CHUNK_SIZE,
       width,
       height,
