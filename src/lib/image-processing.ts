@@ -35,6 +35,11 @@ export async function getResizedTileBuffer(
       .raw()
       .toBuffer();
     tileTextureBufferCache.set(key, buf);
+
+    // todo: move to cache
+    setTimeout(() => {
+      tileTextureBufferCache.delete(key)
+    }, 120000)
   }
 
   return tileTextureBufferCache.get(key)!;

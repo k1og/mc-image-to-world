@@ -33,47 +33,37 @@ export async function convertImageToBlocks(
 
   const blocksToPlace: Array<Array<Tile | undefined>> = [[]];
   const composites: Array<Array<ImageComposite>> = [[]];
-  const processingTasks: Array<Promise<void>> = [];
-
   for (let y = 0; y < downsampleHeight; y++) {
     for (let x = 0; x < downsampleWidth; x++) {
-      processingTasks.push(
-        (async () => {
-          const pixelColor = getPixelColor(
-            x,
-            y,
-            downsampleWidth,
-            data,
-            info.channels,
-          );
-
-          const closestTile = findClosestTile(pixelColor);
-          const tileBuffer = await getResizedTileBuffer(
-            closestTile,
-            chunkSize,
-            chunkSize,
-          );
-
-          if (!blocksToPlace[x]) {
-            blocksToPlace[x] = [];
-          }
-          blocksToPlace[x][y] = closestTile;
-
-          if (!composites[x]) {
-            composites[x] =[]
-          }
-          composites[x][y] = {
-            data: tileBuffer,
-            width: chunkSize,
-            height: chunkSize,
-          }
-        })(),
+      const pixelColor = getPixelColor(
+        x,
+        y,
+        downsampleWidth,
+        data,
+        info.channels,
       );
+      const closestTile = findClosestTile(pixelColor);
+      const tileBuffer = await getResizedTileBuffer(
+        closestTile,
+        chunkSize,
+        chunkSize,
+      );
+
+      if (!blocksToPlace[x]) {
+        blocksToPlace[x] = [];
+      }
+      blocksToPlace[x][y] = closestTile;
+
+      if (!composites[x]) {
+        composites[x] = []
+      }
+      composites[x][y] = {
+        data: tileBuffer,
+        width: chunkSize,
+        height: chunkSize,
+      }
     }
   }
-
-  await Promise.all(processingTasks);
-
   return { blocksToPlace, composites };
 }
 
