@@ -51,6 +51,7 @@ export async function generateWorld(
 
         if (blockToPlace) {
           chunk.setBlockType(blockToPlaceVec3, blockToPlace.id);
+          chunk.setBlockStateId(blockToPlaceVec3, blockToPlace.defaultState);
         } else {
           chunk.setBlockStateId(blockToPlaceVec3, GRASS_BLOCK_DEFAULT_STATE);
         }

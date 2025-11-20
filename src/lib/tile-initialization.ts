@@ -20,6 +20,33 @@ export async function initializeTileColors(
     return; // Already initialized
   }
 
+  const forbiddenBlocks: Record<string, boolean> = {
+    // animated
+    "sculk_catalyst": true,
+    // different color
+    "sculk_shrieker": true,
+    "sculk_sensor": true,
+    "calibrated_sculk_sensor": true,
+    // darker in game
+    "end_portal_frame": true,
+    "grindstone": true,
+    "anvil": true,
+    // different image
+    "bell": true,
+    "cake": true,
+    "smithing_table": true,
+    // image like dirt (w/o grass)
+    "grass_block": true,
+    // image & same as slabs
+    "comparator": true,
+    "repeater": true,
+    // different orientation
+    "furnace": true,
+    "blast_furnace": true,
+    "observer": true,
+    "piston": true,
+  }
+
   const initializationPromises = Object.values(mcAssets.textureContent).map(
     async ({ texture, name }) => {
       if (!texture) {
@@ -27,7 +54,19 @@ export async function initializeTileColors(
       }
     
       const blockData = mcData.blocksByName[name];
-      if (!blockData || blockData.boundingBox === "empty" || blockData.transparent) {
+      if (!blockData 
+        || blockData.boundingBox === "empty" 
+        || blockData.transparent 
+        || forbiddenBlocks[blockData.name] 
+        || blockData.name.endsWith('_slab')
+        || blockData.name.endsWith('_stairs')
+        // same as in forbiddenBlocks
+        || blockData.name.endsWith('_cake')
+        || blockData.name.endsWith('_anvil')
+        || blockData.name.endsWith('_piston')
+        // different image
+        || blockData.name.includes('fence')
+      ) {
         return;
       }
 
