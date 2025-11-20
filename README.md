@@ -26,7 +26,7 @@ Convert your images into Minecraft worlds! This Next.js application takes any im
 
 ![preview](examples/2025-11-20_16.06.03.png)
 ![preview](examples/beautiful-beach-free-image-after-sunset-sky-free-photo.webp)
-***335.607ms** (2210x1316)*
+***2210x1316** (335.607ms)*
 
 ## Tech Stack
 
