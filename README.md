@@ -12,9 +12,21 @@ Convert your images into Minecraft worlds! This Next.js application takes any im
 - 🎮 **Multiple Versions**: Supports multiple Minecraft versions (default: 1.21.1)
 
 ## Examples
-![preview](examples/preview.png)
-![preview2](examples/preview2.png)
+![preview](examples/2025-11-20_16.00.43.png)
+![preview](examples/elden-ring-nightreign-7680x4320-31356.jpg)
+***8K** (3.669s)*
 
+<br>
+
+![preview](examples/2025-11-20_16.03.39.png)
+![preview](examples/rocky-coast-3840x2160-4125.jpg)
+***4K** (774.562ms)*
+
+<br>
+
+![preview](examples/2025-11-20_16.06.03.png)
+![preview](examples/beautiful-beach-free-image-after-sunset-sky-free-photo.webp)
+***335.607ms** (2210x1316)*
 
 ## Tech Stack
 
