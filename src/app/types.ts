@@ -10,3 +10,9 @@ export type Tile = {
   id: number;
   defaultState: number;
 };
+
+export type ImageComposite = {
+  data: Buffer<ArrayBufferLike>
+  width: number
+  height: number
+}

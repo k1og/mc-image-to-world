@@ -1,5 +1,5 @@
 import sharp, { type OverlayOptions } from "sharp";
-import type { RGB, Tile } from "@/app/types";
+import type { ImageComposite, RGB, Tile } from "@/app/types";
 import { tileTextureBufferCache } from "@/app/cache";
 
 /**
@@ -30,12 +30,15 @@ export async function getResizedTileBuffer(
   if (!tileTextureBufferCache.has(key)) {
     const buf = await sharp(tile.textureBuffer)
       .resize(width, height)
+      .raw()
       .toBuffer();
     tileTextureBufferCache.set(key, buf);
   }
 
   return tileTextureBufferCache.get(key)!;
 }
+
+// data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAHlBMVEUAAAD//f799Nj26Mvg07jHYSS7WB2nSySNQyR/Oh3z1ykUAAAAAXRSTlMAQObYZgAAAENJREFUeNpjoBZgVhQEAiEDJIaRoJCioLIBA4tFkXmRRbEDA2dZempYZvkEBs620NDw0Awgo6w1LDQsHciY0QEEnRMAq/sROK50tBAAAAAASUVORK5CYII=
 
 /**
  * Extracts pixel color from raw image data
@@ -60,22 +63,53 @@ export function getPixelColor(
 export async function createPreviewImage(
   width: number,
   height: number,
-  composites: Array<OverlayOptions>,
+  composites: Array<Array<ImageComposite>>,
+  oldComposites: Array<OverlayOptions>
 ): Promise<Buffer> {
-  return await sharp({
-    create: {
-      width,
-      height,
-      channels: 3,
-      background: {
-        r: 255,
-        g: 255,
-        b: 255,
-      },
-    },
-  })
-    .composite(composites)
-    .jpeg()
-    .toBuffer();
-}
+  // return await sharp({
+  //   create: {
+  //     width,
+  //     height,
+  //     channels: 3,
+  //     background: {
+  //       r: 255,
+  //       g: 255,
+  //       b: 255,
+  //     },
+  //   },
+  // })
+  //   .composite(oldComposites)
+  //   .jpeg()
+  //   .toBuffer();
+  const imgBuffer = Buffer.alloc(width * height * 3);        
+  const getIndex = (x: number, y: number, width: number) => 3 * (width * y + x);
 
+  const compositeWidth = composites[0][0].width
+  const compositeHeight = composites[0][0].height
+
+  for (let x = 0; x < composites.length; x++) {
+    for (let y = 0; y < composites[0].length; y++) {
+      for (let innerX = 0; innerX < compositeWidth; innerX++) {
+        for (let innerY = 0; innerY < compositeHeight; innerY++) {
+          const imageIndex = getIndex(compositeWidth * x + innerX, compositeWidth * y + innerY, width)
+          const compositeIndex = getIndex(innerX, innerY, compositeWidth)
+          
+          imgBuffer[imageIndex     ] = composites[x][y].data[compositeIndex      ]
+          imgBuffer[imageIndex  + 1] = composites[x][y].data[compositeIndex  +  1]
+          imgBuffer[imageIndex  + 2] = composites[x][y].data[compositeIndex  +  2]
+        }
+      }
+
+    }
+  }
+    const image = await sharp(imgBuffer, {
+        raw: {
+            width: width,
+            height: height,
+            channels: 3,
+        },
+    })
+    .jpeg()
+    .toBuffer()
+  return image
+}

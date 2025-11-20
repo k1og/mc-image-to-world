@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 
     // Convert image to blocks
     console.time("image-to-blocks");
-    const { blocksToPlace, composites } = await convertImageToBlocks({
+    const { blocksToPlace, composites, oldComposites } = await convertImageToBlocks({
       image: targetImage,
       chunkSize: CHUNK_SIZE,
       width,
@@ -68,6 +68,7 @@ export async function POST(req: Request) {
         width,
         height,
         composites,
+        oldComposites
       );
     } else {
       console.log("Using cached preview image");
