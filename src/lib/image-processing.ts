@@ -11,7 +11,7 @@ export async function getAverageColor(
   const {
     data: [r, g, b],
   } = await sharp(imageBuffer)
-    // .flatten({background: { r: 255, g: 255, b: 255}})
+    .flatten({background: { r: 255, g: 255, b: 255}})
     .resize(1, 1, { fit: "cover" })
     .raw()
     .toBuffer({ resolveWithObject: true });
