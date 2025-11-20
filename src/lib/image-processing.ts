@@ -40,8 +40,6 @@ export async function getResizedTileBuffer(
   return tileTextureBufferCache.get(key)!;
 }
 
-// data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAHlBMVEUAAAD//f799Nj26Mvg07jHYSS7WB2nSySNQyR/Oh3z1ykUAAAAAXRSTlMAQObYZgAAAENJREFUeNpjoBZgVhQEAiEDJIaRoJCioLIBA4tFkXmRRbEDA2dZempYZvkEBs620NDw0Awgo6w1LDQsHciY0QEEnRMAq/sROK50tBAAAAAASUVORK5CYII=
-
 /**
  * Extracts pixel color from raw image data
  */

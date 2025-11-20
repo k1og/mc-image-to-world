@@ -31,25 +31,28 @@ export async function POST(req: Request) {
     const imgArrayBuffer = await img.arrayBuffer();
 
     // Check cache first
-    // const cachedPreview = getCachedPreviewImage(imgArrayBuffer, mcVersion);
-    // if (cachedPreview) {
-    //   console.log("Using cached preview image");
-    //   return new NextResponse(Buffer.from(cachedPreview), {
-    //     headers: {
-    //       "Content-Type": "image/jpeg",
-    //       "Content-Disposition": 'inline; filename="preview.jpg"',
-    //     },
-    //   });
-    // }
+    const cachedPreview = getCachedPreviewImage(imgArrayBuffer, mcVersion);
+    if (cachedPreview) {
+      console.log("Using cached preview image");
+      return new NextResponse(Buffer.from(cachedPreview), {
+        headers: {
+          "Content-Type": "image/jpeg",
+          "Content-Disposition": 'inline; filename="preview.jpg"',
+        },
+      });
+    }
 
     // Initialize Minecraft data
+    console.time("init-mc-data");
     const mcAssets = McAssets(mcVersion);
     const mcData = McData(mcVersion);
     await initializeTileColors(mcAssets, mcData);
+    console.timeEnd("init-mc-data");
 
     const targetImage = sharp(imgArrayBuffer)
     const { width, height } = await sharp(imgArrayBuffer).metadata();
 
+    console.time("image to blocks");
     // Convert image to blocks
     const { composites } = await convertImageToBlocks({
       image: targetImage,
@@ -57,13 +60,16 @@ export async function POST(req: Request) {
       width,
       height,
     });
+    console.timeEnd("image to blocks");
 
     // Create preview image
+    console.time("preview-image");
     const previewImageBuffer = await createPreviewImage(
       width,
       height,
       composites,
     );
+    console.timeEnd("preview-image");
 
     // Cache the preview image for reuse in /api/gen
     setCachedPreviewImage(imgArrayBuffer, mcVersion, previewImageBuffer);

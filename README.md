@@ -59,9 +59,3 @@ pnpm dev
 ```
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
-// Add original image to page
-// Add example image to README.mc
-// Add version selection to page
-// Add note about world version convertion to page
-// Cache by version
-// ADD TESTS
