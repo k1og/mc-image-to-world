@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     const { width, height } = await sharp(imgArrayBuffer).metadata();
 
     // Convert image to blocks
-    const { composites, oldComposites, blocksToPlace } = await convertImageToBlocks({
+    const { composites } = await convertImageToBlocks({
       image: targetImage,
       chunkSize: CHUNK_SIZE,
       width,
@@ -63,7 +63,6 @@ export async function POST(req: Request) {
       width,
       height,
       composites,
-      oldComposites
     );
 
     // Cache the preview image for reuse in /api/gen

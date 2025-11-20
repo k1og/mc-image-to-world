@@ -11,6 +11,7 @@ export async function getAverageColor(
   const {
     data: [r, g, b],
   } = await sharp(imageBuffer)
+    // .flatten({background: { r: 255, g: 255, b: 255}})
     .resize(1, 1, { fit: "cover" })
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -30,6 +31,7 @@ export async function getResizedTileBuffer(
   if (!tileTextureBufferCache.has(key)) {
     const buf = await sharp(tile.textureBuffer)
       .resize(width, height)
+      .flatten({background: { r: 255, g: 255, b: 255}})
       .raw()
       .toBuffer();
     tileTextureBufferCache.set(key, buf);
@@ -64,23 +66,7 @@ export async function createPreviewImage(
   width: number,
   height: number,
   composites: Array<Array<ImageComposite>>,
-  oldComposites: Array<OverlayOptions>
 ): Promise<Buffer> {
-  // return await sharp({
-  //   create: {
-  //     width,
-  //     height,
-  //     channels: 3,
-  //     background: {
-  //       r: 255,
-  //       g: 255,
-  //       b: 255,
-  //     },
-  //   },
-  // })
-  //   .composite(oldComposites)
-  //   .jpeg()
-  //   .toBuffer();
   const imgBuffer = Buffer.alloc(width * height * 3);        
   const getIndex = (x: number, y: number, width: number) => 3 * (width * y + x);
 
@@ -99,7 +85,6 @@ export async function createPreviewImage(
           imgBuffer[imageIndex  + 2] = composites[x][y].data[compositeIndex  +  2]
         }
       }
-
     }
   }
     const image = await sharp(imgBuffer, {
