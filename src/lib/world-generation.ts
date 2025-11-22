@@ -8,7 +8,7 @@ interface BlockData {
 }
 
 interface WorldGenerationOptions {
-  chunk: PCChunk;
+  Chunk: typeof PCChunk;
   anvil: InstanceType<ReturnType<typeof prismarineProviderImMemory.Anvil>>;
   mcData: {
     blocksByName: Record<string, BlockData>;
@@ -22,7 +22,7 @@ interface WorldGenerationOptions {
 export async function generateWorld(
   options: WorldGenerationOptions,
 ): Promise<void> {
-  const { chunk, anvil, mcData, blocksToPlace } = options;
+  const { Chunk, anvil, mcData, blocksToPlace } = options;
 
   const BEDROCK = mcData.blocksByName["bedrock"]?.id;
   const DIRT = mcData.blocksByName["dirt"]?.id;
@@ -35,6 +35,7 @@ export async function generateWorld(
   }
 
   async function createSuperflatChunk(x: number, z: number): Promise<void> {
+    const chunk = new Chunk(null)
     for (let bx = 0; bx < 16; bx++) {
       for (let bz = 0; bz < 16; bz++) {
         chunk.setBiome(

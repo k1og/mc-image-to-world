@@ -83,11 +83,10 @@ export async function POST(req: Request) {
     // Generate world
     console.time("generate-world");
     const anvil = new Anvil();
-    const chunk = new Chunk(null);
 
     await generateWorld({
       anvil,
-      chunk,
+      Chunk,
       mcData,
       blocksToPlace,
     });
