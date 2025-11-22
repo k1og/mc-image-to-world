@@ -22,6 +22,7 @@ export async function convertImageToBlocks(
   options: ImageToBlocksOptions,
 ): Promise<ImageToBlocksResult> {
   const { image, chunkSize, width, height } = options;
+  const tileTextureBuffers = new Map<string, Buffer>();
 
   const downsampleWidth = Math.ceil(width / chunkSize);
   const downsampleHeight = Math.ceil(height / chunkSize);
@@ -47,6 +48,7 @@ export async function convertImageToBlocks(
         closestTile,
         chunkSize,
         chunkSize,
+        tileTextureBuffers,
       );
 
       if (!blocksToPlace[x]) {

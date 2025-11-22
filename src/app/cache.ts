@@ -21,12 +21,6 @@ if (!globalForCache.tileColorsCache) {
   globalForCache.tileColorsCache = tileColors;
 }
 
-export const tileTextureBufferCache =
-  globalForCache.tileTextureBufferCache ?? tileTextureBuffer;
-if (!globalForCache.tileTextureBufferCache) {
-  globalForCache.tileTextureBufferCache = tileTextureBuffer;
-}
-
 export const previewImageCache =
   globalForCache.previewImageCache ?? previewImageCacheMap;
 if (!globalForCache.previewImageCache) {

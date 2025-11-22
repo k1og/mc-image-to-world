@@ -1,6 +1,5 @@
 import sharp, { type OverlayOptions } from "sharp";
 import type { ImageComposite, RGB, Tile } from "@/app/types";
-import { tileTextureBufferCache } from "@/app/cache";
 
 /**
  * Calculates the average RGB color of an image buffer
@@ -26,23 +25,19 @@ export async function getResizedTileBuffer(
   tile: Tile,
   width: number,
   height: number,
+  tileTextureBuffers: Map<string, Buffer>
 ): Promise<Buffer> {
   const key = `${tile.id}-${width}-${height}`;
-  if (!tileTextureBufferCache.has(key)) {
+  if (!tileTextureBuffers.has(key)) {
     const buf = await sharp(tile.textureBuffer)
       .resize(width, height)
       .flatten({background: { r: 255, g: 255, b: 255}})
       .raw()
       .toBuffer();
-    tileTextureBufferCache.set(key, buf);
-
-    // todo: move to cache
-    setTimeout(() => {
-      tileTextureBufferCache.delete(key)
-    }, 120000)
+    tileTextureBuffers.set(key, buf);
   }
 
-  return tileTextureBufferCache.get(key)!;
+  return tileTextureBuffers.get(key)!;
 }
 
 /**
