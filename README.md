@@ -24,9 +24,9 @@ Convert your images into Minecraft worlds! This Next.js application takes any im
 
 <br>
 
-![generated](examples/2025-11-20_16.03.39.png)
-![original](examples/rocky-coast-3840x2160-4125.jpg)
-***4K** (774.562ms)*
+![generated](examples/2025-11-22_13.04.26.png)
+![original](examples/fuji-mountain-with-milky-way-night.jpg)
+***4K** (802.954ms)*
 
 <br>
 
