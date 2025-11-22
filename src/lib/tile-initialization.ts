@@ -27,14 +27,23 @@ export async function initializeTileColors(
     "sculk_shrieker": true,
     "sculk_sensor": true,
     "calibrated_sculk_sensor": true,
+    // has same image as crimson_nylium, but different color in game
+    "warped_nylium": true,
     // darker in game
     "end_portal_frame": true,
     "grindstone": true,
     "anvil": true,
+    // lighter in game
+    "loom": true,
+    "dark_oak_log": true,
+    "stripped_dark_oak_wood": true,
+    "stripped_dark_oak_log": true,
+    "daylight_detector": true,
     // different image
     "bell": true,
     "cake": true,
     "smithing_table": true,
+    "piston_head": true,
     // image like dirt (w/o grass)
     "grass_block": true,
     // image & same as slabs
@@ -45,6 +54,7 @@ export async function initializeTileColors(
     "blast_furnace": true,
     "observer": true,
     "piston": true,
+    "jukebox": true,
     // it breaks
     "cactus": true
   }
@@ -68,6 +78,7 @@ export async function initializeTileColors(
         || blockData.name.endsWith('_piston')
         // different image
         || blockData.name.includes('fence')
+        // carpets (?)
       ) {
         return;
       }
