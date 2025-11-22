@@ -45,6 +45,8 @@ export async function initializeTileColors(
     "blast_furnace": true,
     "observer": true,
     "piston": true,
+    // it breaks
+    "cactus": true
   }
 
   const initializationPromises = Object.values(mcAssets.textureContent).map(
