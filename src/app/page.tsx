@@ -7,6 +7,9 @@ import {
   useEffect,
 } from "react";
 import Image from "next/image";
+import { DEFAULT_MC_VERSION, DEFAULT_PIXEL_DENSITY } from "./constants";
+import { cn } from "@/components/ui/utils";
+import { Slider } from "@/components/ui/slider";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -14,6 +17,7 @@ export default function Home() {
   const [isImgGenLoading, setImgGenIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pixelDensity, setPixelDensity] = useState<number>(DEFAULT_PIXEL_DENSITY)
 
   const handleFormSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
@@ -28,7 +32,8 @@ export default function Home() {
     try {
       const formData = new FormData();
       formData.append("img", file);
-      formData.append("version", "1.20.1");
+      formData.append("version", DEFAULT_MC_VERSION);
+      formData.append("pixelDensity", pixelDensity.toString());
 
       const res = await fetch("/api/gen", {
         method: "POST",
@@ -75,7 +80,8 @@ export default function Home() {
     try {
       const formData = new FormData();
       formData.append("img", file);
-      formData.append("version", "1.20.1");
+      formData.append("version", DEFAULT_MC_VERSION);
+      formData.append("pixelDensity", pixelDensity.toString());
 
       const res = await fetch("/api/preview-image", {
         method: "POST",
@@ -96,7 +102,7 @@ export default function Home() {
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
       }
-      
+
       setPreviewUrl(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -121,20 +127,20 @@ export default function Home() {
   }, [previewUrl]);
 
   return (
-    <div className="font-sans min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-8 max-w-7xl mx-auto w-full">
-        <div className="max-w-md mx-auto w-full">
-          <h1 className="text-3xl font-bold text-center">Minecraft Image Map Generator</h1>
-          <p className="text-center text-gray-600 dark:text-gray-400">
+    <div className={cn("font-sans min-h-screen p-8 pb-20 gap-16 sm:p-20")}>
+      <main className={cn("flex flex-col gap-8 max-w-7xl mx-auto w-full")}>
+        <div className={cn("max-w-md mx-auto w-full")}>
+          <h1 className={cn("text-3xl font-bold text-center")}>Minecraft Image Map Generator</h1>
+          <p className={cn("text-center text-gray-600 dark:text-gray-400")}>
             Convert your images into Minecraft world
           </p>
         </div>
 
-        <form onSubmit={handleFormSubmit} className="flex flex-col gap-4 max-w-md mx-auto w-full">
+        <form onSubmit={handleFormSubmit} className={cn("flex flex-col gap-4 max-w-md mx-auto w-full")}>
           <div>
             <label
               htmlFor="file"
-              className="block text-sm font-medium mb-2"
+              className={cn("block text-sm font-medium mb-2")}
             >
               Select Image
             </label>
@@ -144,30 +150,33 @@ export default function Home() {
               name="file"
               accept="image/*"
               onChange={handleFileChange}
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300"
+              className={cn("w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300")}
               disabled={isWorldGenLoading}
             />
           </div>
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded">
+            <div className={cn("bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded")}>
               {error}
             </div>
           )}
-
-          <div className="flex gap-2">
+          <div>
+            <div className={cn("flex justify-between items-center text-sm font-medium")}><span>Pixel density</span><span>{pixelDensity}</span></div>
+            <Slider disabled={isWorldGenLoading || isImgGenLoading} className={cn("my-1.5")} onValueChange={([value]) => setPixelDensity(value)} value={[pixelDensity]} min={1} max={10} step={1} />
+          </div>
+          <div className={cn("flex gap-2")}>
             <button
               type="button"
               onClick={handlePreview}
               disabled={isWorldGenLoading || isImgGenLoading || !file}
-              className="cursor-pointer flex-1 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
+              className={cn("cursor-pointer flex-1 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors")}
             >
               {isImgGenLoading ? "Generating Preview..." : "Preview"}
             </button>
             <button
               type="submit"
               disabled={isWorldGenLoading || isImgGenLoading || !file}
-              className="cursor-pointer flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
+              className={cn("cursor-pointer flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors")}
             >
               {isWorldGenLoading ? "Generating..." : "Generate Map"}
             </button>
@@ -175,15 +184,15 @@ export default function Home() {
         </form>
 
         {previewUrl && (
-          <div className="mt-8 w-full">
-            <h2 className="text-xl font-semibold mb-4 text-center">Preview</h2>
-            <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-lg">
+          <div className={cn("mt-8 w-full")}>
+            <h2 className={cn("text-xl font-semibold mb-4 text-center")}>Preview</h2>
+            <div className={cn("border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-lg")}>
               <Image
                 src={previewUrl}
                 alt="Minecraft world preview"
                 width={1920}
                 height={1080}
-                className="w-full h-auto max-h-[80vh] object-contain"
+                className={cn("w-full h-auto max-h-[80vh] object-contain")}
                 unoptimized
               />
             </div>

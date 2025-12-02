@@ -5,9 +5,7 @@ import { getPixelColor, getResizedTileBuffer } from "./image-processing";
 
 interface ImageToBlocksOptions {
   image: Sharp;
-  chunkSize: number;
-  width: number;
-  height: number;
+  pixelDensity: number;
 }
 
 interface ImageToBlocksResult {
@@ -21,11 +19,13 @@ interface ImageToBlocksResult {
 export async function convertImageToBlocks(
   options: ImageToBlocksOptions,
 ): Promise<ImageToBlocksResult> {
-  const { image, chunkSize, width, height } = options;
+  const { image, pixelDensity } = options;
   const tileTextureBuffers = new Map<string, Buffer>();
 
-  const downsampleWidth = Math.ceil(width / chunkSize);
-  const downsampleHeight = Math.ceil(height / chunkSize);
+  const { width, height } = await image.metadata();
+
+  const downsampleWidth = Math.ceil(width / pixelDensity);
+  const downsampleHeight = Math.ceil(height / pixelDensity);
 
   const { data, info } = await image
     .resize(downsampleWidth, downsampleHeight)
@@ -46,8 +46,8 @@ export async function convertImageToBlocks(
       const closestTile = findClosestTile(pixelColor);
       const tileBuffer = await getResizedTileBuffer(
         closestTile,
-        chunkSize,
-        chunkSize,
+        pixelDensity,
+        pixelDensity,
         tileTextureBuffers,
       );
 
@@ -61,8 +61,8 @@ export async function convertImageToBlocks(
       }
       composites[x][y] = {
         data: tileBuffer,
-        width: chunkSize,
-        height: chunkSize,
+        width: pixelDensity,
+        height: pixelDensity,
       }
     }
   }

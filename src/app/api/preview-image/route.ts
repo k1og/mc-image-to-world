@@ -12,7 +12,7 @@ import {
   getCachedPreviewImage,
   setCachedPreviewImage,
 } from "@/app/cache";
-import { DEFAULT_MC_VERSION, CHUNK_SIZE } from "@/app/constants";
+import { DEFAULT_MC_VERSION, DEFAULT_PIXEL_DENSITY, MAX_DOWNSAMPLE_HEIGHT, MAX_DOWNSAMPLE_WIDTH } from "@/app/constants";
 
 export async function POST(req: Request) {
   try {
@@ -20,6 +20,8 @@ export async function POST(req: Request) {
     const img = formData.get("img") as File | null;
     const mcVersion =
       (formData.get("version") as string | null) || DEFAULT_MC_VERSION;
+    const pixelDensity = 
+      Number(formData.get("pixelDensity") as string | null) || DEFAULT_PIXEL_DENSITY;
 
     if (!img) {
       return NextResponse.json(
@@ -31,7 +33,7 @@ export async function POST(req: Request) {
     const imgArrayBuffer = await img.arrayBuffer();
 
     // Check cache first
-    const cachedPreview = getCachedPreviewImage(imgArrayBuffer, mcVersion);
+    const cachedPreview = getCachedPreviewImage(imgArrayBuffer, mcVersion, pixelDensity);
     if (cachedPreview) {
       console.log("Using cached preview image");
       return new NextResponse(Buffer.from(cachedPreview), {
@@ -50,15 +52,19 @@ export async function POST(req: Request) {
     console.timeEnd("init-mc-data");
 
     const targetImage = sharp(imgArrayBuffer)
-    const { width, height } = await sharp(imgArrayBuffer).metadata();
+    const { width, height } = await targetImage.metadata();
 
+    const downsampleWidth = Math.ceil(width / pixelDensity);
+    const downsampleHeight = Math.ceil(height / pixelDensity);
+    if (downsampleHeight > MAX_DOWNSAMPLE_HEIGHT || downsampleWidth > MAX_DOWNSAMPLE_WIDTH) {
+      throw new Error('Use greater pixel density for this image')
+    }
+  
     console.time("image to blocks");
     // Convert image to blocks
     const { composites } = await convertImageToBlocks({
       image: targetImage,
-      chunkSize: CHUNK_SIZE,
-      width,
-      height,
+      pixelDensity,
     });
     console.timeEnd("image to blocks");
 
@@ -72,7 +78,7 @@ export async function POST(req: Request) {
     console.timeEnd("preview-image");
 
     // Cache the preview image for reuse in /api/gen
-    setCachedPreviewImage(imgArrayBuffer, mcVersion, previewImageBuffer);
+    setCachedPreviewImage(imgArrayBuffer, previewImageBuffer, mcVersion, pixelDensity);
 
     return new NextResponse(Buffer.from(previewImageBuffer), {
       headers: {

@@ -33,10 +33,12 @@ if (!globalForCache.previewImageCache) {
 export function getPreviewCacheKey(
   imageBuffer: ArrayBuffer,
   mcVersion: string,
+  pixelDensity: number,
 ): string {
   const hash = createHash("sha256");
   hash.update(NodeBuffer.from(imageBuffer));
   hash.update(mcVersion);
+  hash.update(pixelDensity.toString());
   return hash.digest("hex");
 }
 
@@ -46,8 +48,9 @@ export function getPreviewCacheKey(
 export function getCachedPreviewImage(
   imageBuffer: ArrayBuffer,
   mcVersion: string,
+  pixelDensity: number,
 ): Buffer | null {
-  const key = getPreviewCacheKey(imageBuffer, mcVersion);
+  const key = getPreviewCacheKey(imageBuffer, mcVersion, pixelDensity);
   return previewImageCache.get(key) ?? null;
 }
 
@@ -56,10 +59,11 @@ export function getCachedPreviewImage(
  */
 export function setCachedPreviewImage(
   imageBuffer: ArrayBuffer,
-  mcVersion: string,
   previewBuffer: Buffer,
+  mcVersion: string,
+  pixelDensity: number,
 ): void {
-  const key = getPreviewCacheKey(imageBuffer, mcVersion);
+  const key = getPreviewCacheKey(imageBuffer, mcVersion, pixelDensity);
   previewImageCache.set(key, previewBuffer);
   
   // Remove cached preview after a two minutes

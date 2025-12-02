@@ -15,7 +15,7 @@ import { createPreviewImage } from "@/lib/image-processing";
 import { generateWorld } from "@/lib/world-generation";
 import { createWorldZip } from "@/lib/zip-creation";
 import { getCachedPreviewImage } from "@/app/cache";
-import { DEFAULT_MC_VERSION, CHUNK_SIZE } from "@/app/constants";
+import { DEFAULT_MC_VERSION, DEFAULT_PIXEL_DENSITY, MAX_DOWNSAMPLE_HEIGHT, MAX_DOWNSAMPLE_WIDTH } from "@/app/constants";
 
 export async function POST(req: Request) {
   try {
@@ -27,6 +27,8 @@ export async function POST(req: Request) {
     const img = formData.get("img") as File | null;
     const mcVersion =
       (formData.get("version") as string | null) || DEFAULT_MC_VERSION;
+    const pixelDensity = 
+      Number(formData.get("pixelDensity") as string | null) || DEFAULT_PIXEL_DENSITY;
 
     if (!img) {
       return NextResponse.json(
@@ -48,19 +50,23 @@ export async function POST(req: Request) {
     const targetImage = sharp(imgArrayBuffer);
     const { width, height } = await targetImage.metadata();
 
+    const downsampleWidth = Math.ceil(width / pixelDensity);
+    const downsampleHeight = Math.ceil(height / pixelDensity);
+    if (downsampleHeight > MAX_DOWNSAMPLE_HEIGHT || downsampleWidth > MAX_DOWNSAMPLE_WIDTH) {
+      throw new Error('Use greater pixel density for this image')
+    }
+
     // Convert image to blocks
     console.time("image-to-blocks");
     const { blocksToPlace, composites } = await convertImageToBlocks({
       image: targetImage,
-      chunkSize: CHUNK_SIZE,
-      width,
-      height,
+      pixelDensity,
     });
     console.timeEnd("image-to-blocks");
 
     // Check if preview image is cached (from /api/preview-image)
     console.time("preview-image");
-    let previewImageBuffer = getCachedPreviewImage(imgArrayBuffer, mcVersion);
+    let previewImageBuffer = getCachedPreviewImage(imgArrayBuffer, mcVersion, pixelDensity);
     if (!previewImageBuffer) {
       // Not cached, generate it
       console.log("Preview not cached, generating...");
